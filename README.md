@@ -1,7 +1,7 @@
 # SIT771-Tutorial-GameDevelopment
 This is a tutorial to create a game, using C# and Splashkit
 ### Walkthrough for Creating Doodle Jump in C#
-
+![image](https://github.com/user-attachments/assets/a09cd455-31cd-4afd-a4ff-6d64392c5d22)
 ---
 
 ### Step 1: Set Up Your Development Environment
