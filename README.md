@@ -478,7 +478,6 @@ public static class Program
 - **Scoring System**: Implement a scoring system that increases as the player jumps on platforms or collects power-ups.
 - **Levels and Progression**: Create different levels with varying difficulty, platforms, enemies, and power-ups.
 - **Sound Effects**: Add sound effects for jumping, collecting power-ups, and game over.
-- **Mobile Support**: If you're interested in mobile development, consider using a framework like Xamarin or Unity to create a mobile version of the game.
 
 ---
 
