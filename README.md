@@ -1,5 +1,26 @@
 # SIT771-Tutorial-GameDevelopment
-This is a tutorial to create a game, using C# and Splashkit
+In this tutorial, we will create a simple version of the "Doodle Jump" game using the SplashKit SDK in C#. This game features a player character that jumps between platforms, avoids enemies, and collects power-ups while aiming for a high score.
+
+### Game Overview
+
+**Game Objective:** The player controls a character that jumps between platforms, collects power-ups, and avoids falling off the screen. The goal is to achieve the highest score possible.
+
+### Concepts Covered
+
+- **Game Structure**: Understanding how game components interact.
+- **Classes and Inheritance**: Using object-oriented programming to create reusable game object classes.
+- **Collision Detection**: Implementing methods to check for interactions between objects.
+- **Game Loop**: Managing the continuous flow of the game.
+- **User Input**: Handling keyboard input to control the player character.
+
+## Prerequisites
+
+- **C# Knowledge**: Basic understanding of C# programming.
+- **Game Development Concepts**: Familiarity with game loops, classes, and object-oriented programming.
+- **SplashKit SDK**: Ensure you have the SplashKit SDK installed and set up in your C# development environment. Visit the [SplashKit website](https://splashkit.io/) for installation instructions.
+
+## Game Setup
+
 ### Walkthrough for Creating Doodle Jump in C#
 ![image](https://github.com/user-attachments/assets/a09cd455-31cd-4afd-a4ff-6d64392c5d22)
 ---
@@ -23,166 +44,257 @@ This is a tutorial to create a game, using C# and Splashkit
 
 ---
 
-### Step 2: Create Game Classes
+### 1. Create the Game Classes
 
-You will need several classes to represent different game elements: `Player`, `Platform`, `Enemy`, `PowerUp`, and the main `DoodleJumpGame` class. Here’s how to set them up:
+We will create multiple classes to represent the various objects in the game.
 
-#### 1. Create the Player Class
+#### GameObject Class
 
-Create a new class file named `Player.cs`.
+This is the base class for all game objects. It handles the common properties and behaviors of game entities.
 
 ```csharp
 using SplashKitSDK;
 
-public class Player
+public abstract class GameObject
 {
-    private const float Gravity = 0.5f; // Gravity effect
-    private const float JumpForce = 15.0f; // Jump force
-    private const float Speed = 5.0f; // Player movement speed
-    private float _x, _y; // Player position
-    private float _velocityY; // Player vertical velocity
+    protected Sprite _sprite; // The sprite representing this game object
 
-    public Player()
+    // Constructor to load the bitmap and initialize the sprite
+    public GameObject(string bitmapName, string bitmapFile)
     {
-        _x = 400; // Initial X position
-        _y = 300; // Initial Y position
-        _velocityY = 0; // Initial vertical velocity
+        SplashKit.LoadBitmap(bitmapName, bitmapFile);
+        _sprite = new Sprite(bitmapName, bitmapFile);
     }
 
+    // Draw the sprite on the screen
+    public virtual void Draw()
+    {
+        _sprite.Draw();
+    }
+
+    // Update method to be overridden in derived classes
+    public virtual void Update() { }
+
+    // Check for collision with another game object
+    public virtual bool CollidesWith(GameObject other)
+    {
+        return SplashKit.SpriteCollision(this._sprite, other._sprite);
+    }
+
+    // Properties for accessing the sprite's position and dimensions
+    public float X
+    {
+        get { return _sprite.X; }
+        set { _sprite.X = value; }
+    }
+
+    public float Y
+    {
+        get { return _sprite.Y; }
+        set { _sprite.Y = value; }
+    }
+
+    public int Width => _sprite.Width;
+    public int Height => _sprite.Height;
+}
+```
+
+#### Explanation
+
+- **Sprite**: Represents the visual element of the game object. We load a bitmap image that will be displayed on the screen.
+- **Collision Detection**: The `CollidesWith` method uses the SplashKit functionality to check if this game object collides with another.
+
+#### Player Class
+
+This class inherits from `GameObject` and manages the player's actions, including movement and jumping.
+
+```csharp
+public class Player : GameObject
+{
+    private const float Gravity = 0.5f; // The force of gravity affecting the player
+    public const float JumpStrength = -15f; // The strength of the player's jump
+    private float _yVelocity; // The current vertical velocity of the player
+
+    // Constructor initializes the player position and sprite
+    public Player() : base("doodle", "kangaroo.png")
+    {
+        X = DoodleJumpGame.WindowWidth / 2; // Start in the middle of the screen
+        Y = DoodleJumpGame.WindowHeight / 2; // Start at the center vertically
+        _yVelocity = 0; // Initial vertical velocity
+    }
+
+    // Apply gravity to the player
     public void ApplyGravity()
     {
-        _velocityY += Gravity; // Increase downward velocity
-        _y += _velocityY; // Update position based on velocity
+        _yVelocity += Gravity; // Increase vertical velocity
+        Y += _yVelocity; // Update position based on velocity
     }
 
-    public void MoveLeft() => _x -= Speed; // Move left
-    public void MoveRight() => _x += Speed; // Move right
-
-    public void Jump()
+    // Jump method to give the player an upward velocity
+    public void Jump(float strength = JumpStrength)
     {
-        _velocityY = -JumpForce; // Apply jump force
+        _yVelocity = strength; // Set the upward velocity
     }
 
-    public void Draw() => SplashKit.DrawCircle(Color.Blue, _x, _y, 20); // Draw player
+    // Move the player to the left
+    public void MoveLeft()
+    {
+        X -= 5; // Move 5 units left
+    }
 
-    public bool IsOffScreen() => _y > 600; // Check if player is off the screen
+    // Move the player to the right
+    public void MoveRight()
+    {
+        X += 5; // Move 5 units right
+    }
+
+    // Check if the player is falling
+    public bool IsFalling => _yVelocity > 0;
+
+    // Update the player position and handle screen boundaries
+    public override void Update()
+    {
+        if (X < 0) X = 0; // Prevent moving off the left edge
+        if (X > DoodleJumpGame.WindowWidth - Width) X = DoodleJumpGame.WindowWidth - Width; // Prevent moving off the right edge
+    }
+
+    // Check if the player has fallen off the screen
+    public bool IsOffScreen()
+    {
+        return Y > DoodleJumpGame.WindowHeight; // Check if the Y position exceeds the window height
+    }
 }
 ```
 
-#### 2. Create the Platform Class
+#### Explanation
 
-Create another class file named `Platform.cs`.
+- **Gravity**: The `ApplyGravity` method simulates the downward force affecting the player, increasing their downward velocity over time.
+- **Movement**: The `MoveLeft` and `MoveRight` methods allow the player to move horizontally across the screen.
+- **Jumping**: The `Jump` method sets an upward velocity to simulate jumping.
+
+#### Platform Class
+
+This class represents the platforms the player can jump on.
 
 ```csharp
-using SplashKitSDK;
-
-public class Platform
+public class Platform : GameObject
 {
-    private float _x, _y; // Platform position
-    private const float Width = 100; // Platform width
-    private const float Height = 10; // Platform height
-
-    public Platform(float x, float y)
+    // Constructor initializes the platform's position
+    public Platform(float x, float y) : base("platform", "platform.png")
     {
-        _x = x;
-        _y = y;
+        X = x;
+        Y = y;
     }
 
-    public void Draw() => SplashKit.FillRectangle(Color.Green, _x, _y, Width, Height); // Draw platform
-
+    // Check if the player can bounce off this platform
     public bool CanBounce(Player player)
     {
-        // Check if the player collides with the platform
-        return (player.IsOffScreen() == false && player.X > _x && player.X < _x + Width && player.Y + 20 >= _y && player.Y + 20 <= _y + Height);
+        return player.Y < Y && player.CollidesWith(this) && player.IsFalling;
     }
 
-    public void Update() { /* Add logic for platform behavior if needed */ }
+    // Update the platform's position
+    public override void Update()
+    {
+        if (Y > DoodleJumpGame.WindowHeight) // If the platform goes off-screen
+        {
+            X = SplashKit.Rnd(DoodleJumpGame.WindowWidth - Width); // Randomize the X position
+            Y = -Height; // Reset to the top of the screen
+        }
+    }
 }
 ```
 
-#### 3. Create the Enemy Class
+#### Explanation
 
-Create a class file named `Enemy.cs`.
+- **Bounce Detection**: The `CanBounce` method checks if the player is falling onto the platform, allowing them to bounce off.
+- **Platform Reset**: The `Update` method randomizes the position of the platform when it moves off-screen, creating a continuous gameplay experience.
+
+#### Enemy Class
+
+Represents the enemies in the game.
 
 ```csharp
-using SplashKitSDK;
-
-public class Enemy
+public class Enemy : GameObject
 {
-    private float _x, _y; // Enemy position
-
-    public Enemy(float x, float y)
+    // Constructor initializes the enemy's position
+    public Enemy(float x, float y) : base("enemy", "enemy.png")
     {
-        _x = x;
-        _y = y;
+        X = x;
+        Y = y;
     }
 
-    public void Draw() => SplashKit.FillCircle(Color.Red, _x, _y, 20); // Draw enemy
-
-    public bool CollidesWith(Player player)
+    // Update the enemy's position
+    public override void Update()
     {
-        // Check for collision with player
-        return (player.X > _x - 20 && player.X < _x + 20 && player.Y > _y - 20 && player.Y < _y + 20);
+        if (Y > DoodleJumpGame.WindowHeight) // If the enemy goes off-screen
+        {
+            X = SplashKit.Rnd(DoodleJumpGame.WindowWidth - Width); // Randomize the X position
+            Y = -Height; // Reset to the top of the screen
+        }
     }
-
-    public void Update() { /* Add logic for enemy behavior if needed */ }
 }
 ```
 
-#### 4. Create the PowerUp Class
+#### Explanation
 
-Create a class file named `PowerUp.cs`.
+- Similar to the `Platform` class, the `Enemy` class resets its position when it moves off-screen, allowing for a continuous challenge for the player.
+
+#### PowerUp Class
+
+Represents power-ups that boost the player's jump strength.
 
 ```csharp
-using SplashKitSDK;
-
-public class PowerUp
+public class PowerUp : GameObject
 {
-    private float _x, _y; // Power-up position
-
-    public PowerUp(float x, float y)
+    // Constructor initializes the power-up's position
+    public PowerUp(float x, float y) : base("spring", "spring.png")
     {
-        _x = x;
-        _y = y;
+        X = x;
+        Y = y;
     }
 
-    public void Draw() => SplashKit.FillRectangle(Color.Yellow, _x, _y, 20, 20); // Draw power-up
-
-    public bool CollidesWith(Player player)
-    {
-        // Check for collision with player
-        return (player.X > _x - 10 && player.X < _x + 30 && player.Y > _y - 10 && player.Y < _y + 30);
-    }
-
+    // Apply the power-up to the player
     public void ApplyPowerUp(Player player)
     {
-        // Implement power-up effect (e.g., increase score, boost player, etc.)
+        player.Jump(Player.JumpStrength * 2); // Boost the player's jump strength
     }
 
-    public void Update() { /* Add logic for power-up behavior if needed */ }
+    // Update the power-up's position
+    public override void Update()
+    {
+        if (Y > DoodleJumpGame.WindowHeight) // If the power-up goes off-screen
+        {
+            X = SplashKit.Rnd(DoodleJumpGame.WindowWidth - Width); // Randomize the X position
+            Y = -Height; // Reset to the top of the screen
+        }
+    }
 }
 ```
 
----
+#### Explanation
 
-### Step 3: Create the Game Logic
+- The `ApplyPowerUp` method doubles the jump strength of the player when they collect the power-up, providing an advantage during gameplay.
 
-Create a new class file named `DoodleJumpGame.cs`.
+### 2. Create the Game Manager Class
+
+This class manages the game loop, updates, and rendering. It also initializes game objects and handles game state.
 
 ```csharp
-using System.Collections.Generic;
-using SplashKitSDK;
-
 public class DoodleJumpGame
 {
-    private const int WindowWidth = 800; // Window width
-    private const int WindowHeight = 600; // Window height
+    public const int WindowWidth = 400; // Width of the game window
+    public const int WindowHeight = 600; // Height of the game window
+
     private Player _player; // Player instance
     private List<Platform> _platforms; // List of platforms
     private List<Enemy> _enemies; // List of enemies
     private List<PowerUp> _powerUps; // List of power-ups
-    private bool _gameOver; // Game over flag
-    private int _score; // Player score
+
+    private float _viewOffset; // Offset for scrolling
+    private int _score; // Player's score
+    private bool _game
+
+Over; // Game over flag
 
     public DoodleJumpGame()
     {
@@ -274,12 +386,16 @@ public class DoodleJumpGame
                 // Remove power-up after collection
                 _powerUps.Remove(powerUp);
                 break; // Exit loop to avoid modifying the list while iterating
-
-
             }
         }
 
-        if (_player.IsOffScreen()) // Check if the player falls off the screen
+        // Update all game objects
+        foreach (var platform in _platforms) platform.Update();
+        foreach (var enemy in _enemies) enemy.Update();
+        foreach (var powerUp in _powerUps) powerUp.Update();
+
+        // Check if the player has fallen off the screen
+        if (_player.IsOffScreen())
         {
             GameOver(); // End the game if the player falls
         }
@@ -288,44 +404,66 @@ public class DoodleJumpGame
     private void Draw()
     {
         SplashKit.ClearScreen(); // Clear the screen
-        _player.Draw(); // Draw the player
-        foreach (var platform in _platforms) platform.Draw(); // Draw all platforms
-        foreach (var enemy in _enemies) enemy.Draw(); // Draw all enemies
-        foreach (var powerUp in _powerUps) powerUp.Draw(); // Draw all power-ups
-        // Display score and game over message if necessary
-        SplashKit.DrawText($"Score: {_score}", Color.White, 10, 10); // Display the score
+
+        // Draw all game objects
+        _player.Draw();
+        foreach (var platform in _platforms) platform.Draw();
+        foreach (var enemy in _enemies) enemy.Draw();
+        foreach (var powerUp in _powerUps) powerUp.Draw();
+
+        // Draw the score
+        SplashKit.DrawText("Score: " + _score, Color.White, 10, 10); // Display the score
     }
 
     private void GameOver()
     {
         _gameOver = true; // Set game over flag
-        SplashKit.DrawText("Game Over", Color.Red, WindowWidth / 2 - 50, WindowHeight / 2); // Display game over message
-        SplashKit.RefreshScreen(); // Refresh the screen
-        SplashKit.Delay(2000); // Wait for 2 seconds
+        SplashKit.DrawText("Game Over!", Color.Red, WindowWidth / 2 - 50, WindowHeight / 2); // Display game over message
+        SplashKit.DrawText("Press R to Restart", Color.White, WindowWidth / 2 - 75, WindowHeight / 2 + 30); // Display restart message
+    }
+
+    private void Restart()
+    {
+        // Reset game state
+        _player = new Player();
+        _platforms.Clear();
+        _enemies.Clear();
+        _powerUps.Clear();
+        InitializePlatforms();
+        InitializeEnemies();
+        InitializePowerUps();
+        _score = 0;
+        _gameOver = false;
     }
 }
 ```
 
----
+#### Explanation
 
-### Step 4: Create the Main Entry Point
+- **Game Initialization**: The constructor initializes the game window and creates instances of the player, platforms, enemies, and power-ups.
+- **Game Loop**: The `Run` method contains the main game loop that processes events, updates game states, and draws objects.
+- **Updating Game State**: The `Update` method manages player movement, gravity, collision detection, and handles game logic such as scoring and game-over conditions.
+- **Drawing Game Objects**: The `Draw` method clears the screen and renders all game objects along with the score.
+- **Game Over Logic**: The `GameOver` method displays the game over message and handles the restart logic.
 
-Finally, create the main entry point for your game in `Program.cs`.
+### 3. Create the Main Method
+
+The `Main` method starts the game.
 
 ```csharp
-class Program
+public static class Program
 {
-    static void Main(string[] args)
+    public static void Main()
     {
         DoodleJumpGame game = new DoodleJumpGame(); // Create an instance of the game
-        game.Run(); // Start the game
+        game.Run();
     }
 }
 ```
 
 ---
 
-### Step 5: Run Your Game
+### 4: Run Your Game
 
 1. **Build the Project**:
    - Click on "Build" in the menu and select "Build Solution."
