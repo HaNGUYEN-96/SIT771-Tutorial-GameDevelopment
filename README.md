@@ -1,5 +1,6 @@
 # SIT771-Tutorial-GameDevelopment
 In this tutorial, we will create a simple version of the "Doodle Jump" game using the SplashKit SDK in C#. This game features a player character that jumps between platforms, avoids enemies, and collects power-ups while aiming for a high score.
+*Created br Thai Ha NGUYEN, Deakin University.*
 
 ### Game Overview
 
