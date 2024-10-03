@@ -344,6 +344,6 @@ class Program
 
 ---
 
-### Conclusion
+### Congratulations! 
 
-Congratulations! You've created a simple version of Doodle Jump using C# and SplashKit. You can expand on this base by adding more features and polishing the gameplay. Enjoy coding and have fun!
+You've created a simple version of Doodle Jump using C# and SplashKit. You can expand on this base by adding more features and polishing the gameplay. Enjoy coding and have fun!
